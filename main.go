@@ -3,248 +3,57 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"kasir-api/config"
+	"kasir-api/handlers"
+	"kasir-api/repositories"
+	"kasir-api/services"
+	"log"
 	"net/http"
-	"strconv"
+	"os"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
-type Product struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Price int    `json:"price"`
-	Stock int    `json:"stock"`
-}
-
-type Category struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Description string `json:"description"`
-}
-
-var products = []Product{
-	{ID: 1, Name: "Indomie Goreng", Price: 3500, Stock: 10},
-	{ID: 2, Name: "Sosis Kenzler", Price: 10800, Stock: 20},
-}
-
-var categories = []Category{
-	{ID: 1, Name: "Makanan", Description: "Kategori makanan"},
-	{ID: 2, Name: "Minuman", Description: "Kategori minuman"},
-}
-
-func getProducts(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(products)
-}
-
-func createProduct(w http.ResponseWriter, r *http.Request) {
-	var newProduct Product
-	err := json.NewDecoder(r.Body).Decode(&newProduct)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	newProduct.ID = len(products) + 1
-	products = append(products, newProduct)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(newProduct)
-}
-
-func getProductByID(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid product ID", http.StatusBadRequest)
-		return
-	}
-
-	for _, product := range products {
-		if product.ID == id {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(product)
-			return
-		}
-	}
-
-	http.Error(w, "Product not found", http.StatusNotFound)
-}
-
-func updateProduct(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid product ID", http.StatusBadRequest)
-		return
-	}
-
-	var updatedProduct Product
-	err = json.NewDecoder(r.Body).Decode(&updatedProduct)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	for i, product := range products {
-		if product.ID == id {
-			updatedProduct.ID = id
-			products[i] = updatedProduct
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(updatedProduct)
-			return
-		}
-	}
-
-	http.Error(w, "Product not found", http.StatusNotFound)
-}
-
-func deleteProduct(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid product ID", http.StatusBadRequest)
-		return
-	}
-
-	for i, product := range products {
-		if product.ID == id {
-			products = append(products[:i], products[i+1:]...)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"message": "Product deleted successfully"})
-			return
-		}
-	}
-
-	http.Error(w, "Product not found", http.StatusNotFound)
-}
-
-func getCategories(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(categories)
-}
-
-func createCategory(w http.ResponseWriter, r *http.Request) {
-	var newCategory Category
-	err := json.NewDecoder(r.Body).Decode(&newCategory)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	newCategory.ID = len(categories) + 1
-	categories = append(categories, newCategory)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(newCategory)
-}
-
-func getCategoryByID(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
-		return
-	}
-
-	for _, category := range categories {
-		if category.ID == id {
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(category)
-			return
-		}
-	}
-
-	http.Error(w, "Category not found", http.StatusNotFound)
-}
-
-func updateCategory(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
-		return
-	}
-
-	var updatedCategory Category
-	err = json.NewDecoder(r.Body).Decode(&updatedCategory)
-	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	for i, category := range categories {
-		if category.ID == id {
-			updatedCategory.ID = id
-			categories[i] = updatedCategory
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(updatedCategory)
-			return
-		}
-	}
-
-	http.Error(w, "Category not found", http.StatusNotFound)
-}
-
-func deleteCategory(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
-		return
-	}
-
-	for i, category := range categories {
-		if category.ID == id {
-			categories = append(categories[:i], categories[i+1:]...)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"message": "Category deleted successfully"})
-			return
-		}
-	}
-
-	http.Error(w, "Category not found", http.StatusNotFound)
+type Config struct {
+	Port string `mapstructure:"PORT"`
+	DBConn string `mapstructure:"DB_CONN"`
 }
 
 func main() {
-	//GET /api/categories, POST /api/categories
-	http.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			getCategories(w, r)
-		} else if r.Method == "POST" {
-			createCategory(w, r)
-		}
-	})
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	// GET /api/categories/{id}, PUT /api/categories/{id}, DELETE /api/categories/{id}
-	http.HandleFunc("/api/categories/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			getCategoryByID(w, r)
-		} else if r.Method == "PUT" {
-			updateCategory(w, r)
-		} else if r.Method == "DELETE" {
-			deleteCategory(w, r)
-		}
-	})
+	if _, err := os.Stat(".env"); err == nil {
+		viper.SetConfigFile(".env")
+		_ = viper.ReadInConfig()
+	}
 
-	// GET /api/products/{id}, PUT /api/products/{id}, DELETE /api/products/{id}
-	http.HandleFunc("/api/products/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			getProductByID(w, r)
-		} else if r.Method == "PUT" {
-			updateProduct(w, r)
-		} else if r.Method == "DELETE" {
-			deleteProduct(w, r)
-		}
-	})
+	env := Config{
+		Port: viper.GetString("PORT"),
+		DBConn: viper.GetString("DB_CONN"),
+	}
+	
+	//setup database
+	db, err := config.InitDB(env.DBConn)
+	if err != nil {
+		log.Fatal("Failed to initialize database: ", err)
+	}
+	defer db.Close()
 
-	// GET /api/products, POST /api/products
-	http.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			getProducts(w, r)
-		} else if r.Method == "POST" {
-			createProduct(w, r)
-		}
-	})
+	productRepo := repositories.NewProductRepository(db)
+	productService := services.NewProductService(productRepo)
+	ProductHandler := handlers.NewProductHandler(productService)
+
+	categoryRepo := repositories.NewCategoryRepository(db)
+	categoryService := services.NewCategoryService(categoryRepo)
+	CategoryHandler := handlers.NewCategoryHandler(categoryService)
+
+	//setup router
+	http.HandleFunc("api/products", ProductHandler.HandleProducts)
+	http.HandleFunc("api/products/", ProductHandler.HandleProductByID)
+	http.HandleFunc("api/categories", CategoryHandler.HandleCategories)
+	http.HandleFunc("api/categories/", CategoryHandler.HandleCategoryByID)
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -333,9 +142,9 @@ func main() {
 		})
 	})
 
-	fmt.Println("Server running on localhost:8080")
+	fmt.Println("Server running on localhost:" + env.Port)
 
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":" + env.Port, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
