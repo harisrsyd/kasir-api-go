@@ -50,10 +50,10 @@ func main() {
 	CategoryHandler := handlers.NewCategoryHandler(categoryService)
 
 	//setup router
-	http.HandleFunc("api/products", ProductHandler.HandleProducts)
-	http.HandleFunc("api/products/", ProductHandler.HandleProductByID)
-	http.HandleFunc("api/categories", CategoryHandler.HandleCategories)
-	http.HandleFunc("api/categories/", CategoryHandler.HandleCategoryByID)
+	http.HandleFunc("/api/products", ProductHandler.HandleProducts)
+	http.HandleFunc("/api/products/", ProductHandler.HandleProductByID)
+	http.HandleFunc("/api/categories", CategoryHandler.HandleCategories)
+	http.HandleFunc("/api/categories/", CategoryHandler.HandleCategoryByID)
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
