@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"kasir-api/models"
+	"strings"
+	"time"
 )
 
 type TransactionRepository struct {
@@ -53,18 +55,37 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 	}
 
 	var transactionID int
-	err = tx.QueryRow("INSERT INTO transactions (total_amount) VALUES ($1) RETURNING id", totalAmount).Scan(&transactionID)
+	var createdAt time.Time
+	err = tx.QueryRow("INSERT INTO transactions (total_amount) VALUES ($1) RETURNING id, created_at", totalAmount).Scan(&transactionID, &createdAt)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := range details {
-		details[i].TransactionID = transactionID
-		_, err = tx.Exec("INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES ($1, $2, $3, $4)",
-			transactionID, details[i].ProductID, details[i].Quantity, details[i].Subtotal)
-		if err != nil {
-			return nil, err
-		}
+	query := `INSERT INTO transaction_details (transaction_id, product_id, quantity, subtotal) VALUES `
+
+	args := []interface{}{}
+	placeholders := []string{}
+
+	for i, d := range details {
+		base := i * 4
+		placeholders = append(
+			placeholders,
+			fmt.Sprintf("($%d, $%d, $%d, $%d)", base+1, base+2, base+3, base+4),
+		)
+
+		args = append(args,
+			transactionID,
+			d.ProductID,
+			d.Quantity,
+			d.Subtotal,
+		)
+	}
+
+	query += strings.Join(placeholders, ", ")
+
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -74,6 +95,16 @@ func (repo *TransactionRepository) CreateTransaction(items []models.CheckoutItem
 	return &models.Transaction{
 		ID:          transactionID,
 		TotalAmount: totalAmount,
+		CreatedAt:   createdAt,
 		Details:     details,
 	}, nil
+}
+
+func (repo *TransactionRepository) GetReportToday() (*models.Report, error) {
+	var report models.Report
+	err := repo.db.QueryRow("SELECT COUNT(id) AS total_sales, SUM(total_amount) AS total_revenue FROM transactions WHERE DATE(created_at) = DATE(NOW())").Scan(&report.TotalSales, &report.TotalRevenue)
+	if err != nil {
+		return nil, err
+	}
+	return &report, nil
 }
