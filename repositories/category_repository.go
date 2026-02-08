@@ -58,7 +58,7 @@ func (r *CategoryRepository) Create(category *models.Category) error {
 }
 
 func (r *CategoryRepository) Update(category *models.Category) error {
-	query := "UPDATE categories SET name = $1, description = $2 WHERE id = $3"
+	query := "UPDATE categories SET name = $1, description = $2, updated_at = NOW() WHERE id = $3"
 	result, err := r.db.Exec(query, category.Name, category.Description, category.ID)
 	if err != nil {
 		return err
