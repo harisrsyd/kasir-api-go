@@ -52,14 +52,14 @@ func (r *CategoryRepository) GetByID(id int) (*models.Category, error) {
 }
 
 func (r *CategoryRepository) Create(category *models.Category) error {
-	query := "INSERT INTO categories (name) VALUES ($1) RETURNING id"
-	err := r.db.QueryRow(query, category.Name).Scan(&category.ID)
+	query := "INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id"
+	err := r.db.QueryRow(query, category.Name, category.Description).Scan(&category.ID)
 	return err
 }
 
 func (r *CategoryRepository) Update(category *models.Category) error {
-	query := "UPDATE categories SET name = $1 WHERE id = $2"
-	result, err := r.db.Exec(query, category.Name, category.ID)
+	query := "UPDATE categories SET name = $1, description = $2, updated_at = NOW() WHERE id = $3"
+	result, err := r.db.Exec(query, category.Name, category.Description, category.ID)
 	if err != nil {
 		return err
 	}

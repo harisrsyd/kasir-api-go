@@ -14,9 +14,14 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-func (r *ProductRepository) GetAll() ([]models.Product, error) {
+func (r *ProductRepository) GetAll(name string) ([]models.Product, error) {
 	query := "SELECT id, name, price, stock, category_id FROM products"
-	rows, err := r.db.Query(query)
+	args := []interface{}{}
+	if name != "" {
+		query += " WHERE name ILIKE $1"
+		args = append(args, "%"+name+"%")
+	}
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +60,7 @@ func (r *ProductRepository) Create(product *models.Product) error {
 }
 
 func (r *ProductRepository) Update(product *models.Product) error {
-	query := "UPDATE products SET name = $1, price = $2, stock = $3, category_id = $4 WHERE id = $5"
+	query := "UPDATE products SET name = $1, price = $2, stock = $3, category_id = $4, updated_at = NOW() WHERE id = $5"
 	result, err := r.db.Exec(query, product.Name, product.Price, product.Stock, product.CategoryID, product.ID)
 	if err != nil {
 		return err

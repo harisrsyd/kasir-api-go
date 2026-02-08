@@ -31,7 +31,8 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	products, err := h.service.GetAll()
+	name := r.URL.Query().Get("name")
+	products, err := h.service.GetAll(name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -71,10 +72,10 @@ func (h *ProductHandler) HandleProductByID(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *ProductHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "api/products")
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid product ID", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	product, err := h.service.GetByID(id)
@@ -87,7 +88,7 @@ func (h *ProductHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "api/products")
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid product ID", http.StatusBadRequest)
@@ -109,7 +110,7 @@ func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "api/products")
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/products/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid product ID", http.StatusBadRequest)

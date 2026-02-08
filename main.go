@@ -43,17 +43,24 @@ func main() {
 
 	productRepo := repositories.NewProductRepository(db)
 	productService := services.NewProductService(productRepo)
-	ProductHandler := handlers.NewProductHandler(productService)
+	productHandler := handlers.NewProductHandler(productService)
 
 	categoryRepo := repositories.NewCategoryRepository(db)
 	categoryService := services.NewCategoryService(categoryRepo)
-	CategoryHandler := handlers.NewCategoryHandler(categoryService)
+	categoryHandler := handlers.NewCategoryHandler(categoryService)
+
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
 
 	//setup router
-	http.HandleFunc("/api/products", ProductHandler.HandleProducts)
-	http.HandleFunc("/api/products/", ProductHandler.HandleProductByID)
-	http.HandleFunc("/api/categories", CategoryHandler.HandleCategories)
-	http.HandleFunc("/api/categories/", CategoryHandler.HandleCategoryByID)
+	http.HandleFunc("/api/products", productHandler.HandleProducts)
+	http.HandleFunc("/api/products/", productHandler.HandleProductByID)
+	http.HandleFunc("/api/categories", categoryHandler.HandleCategories)
+	http.HandleFunc("/api/categories/", categoryHandler.HandleCategoryByID)
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)
+	http.HandleFunc("/api/report/today", transactionHandler.HandleReport)
+
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
